@@ -1,0 +1,86 @@
+import random 
+from write_log import *
+
+def sendDiag_server(cdb):
+	write_log("SEND_DIAGNOSTIC","STARTED")	
+	fp = open("sense.dat","w")
+	print cdb["Self Test Code"][0]
+	
+	no=(random.randrange(1,10000))
+	write_log("SEND_DIAGNOSTIC","TEST_CODE "+str(cdb["Self Test Code"][0]))
+	if (cdb["Self Test"][0]==0):
+		if (cdb["Self Test Code"][0]==1):
+			write_log("SEND_DIAGNOSTIC","Background short self-test performed")
+			SelfTest = "Background short self-test" 
+		elif (cdb["Self Test Code"][0]==2):
+			write_log("SEND_DIAGNOSTIC","Background extended self-test performed")
+			SelfTest = "Background extended self-test" 
+		elif (cdb["Self Test Code"][0]==3):
+			write_log("SEND_DIAGNOSTIC","Reserved test performed")
+			SelfTest = "Reserved Test" 
+		elif (cdb["Self Test Code"][0]==4):
+			write_log("SEND_DIAGNOSTIC","Abort background self-test performed")
+			SelfTest = "Abort background self-test" 
+		elif (cdb["Self Test Code"][0]==5):
+			write_log("SEND_DIAGNOSTIC","Foreground short self-test performed")
+			SelfTest = "Foreground short self-test" 
+		elif (cdb["Self Test Code"][0]==6):
+			write_log("SEND_DIAGNOSTIC","Foreground extended self-test performed")
+			SelfTest = "Foreground extended self-test" 
+		elif (cdb["Self Test Code"][0]==7):
+			write_log("SEND_DIAGNOSTIC","Reserved test performed")
+			SelfTest = "Reserved Test"
+		else: 
+			fp.write("SEND_DIAGNOSTIC FAIL 11\n")
+			SelfTest = "Invalid Self Test Code"
+	elif(cdb["Self Test"][0]==1):
+		if(cdb["Self Test Code"][0]==0):
+			SelfTest= "Default Self Test"
+		else: 
+			SelfTest = "Invalid Self Test Code"
+			
+			
+
+	if (cdb["DevOffl"][0]!=0 and cdb["DevOffl"][0]!=1):
+			fp.write("SEND_DIAGNOSTIC FAIL 11\n")
+			fp.close()			
+			SelfTest = "Invalid Device offline bit value. Enter 0 or 1. "
+			return SelfTest + "Please execute the command again !"
+	
+	if (cdb["UnitOffl"][0]!=0 and cdb["UnitOffl"][0]!=1):
+			fp.write("SEND_DIAGNOSTIC FAIL 11\n")
+			fp.close()			
+			SelfTest = "Invalid Unit offline bit value. Enter 0 or 1. "
+			return SelfTest + "Please execute the command again !"
+			
+
+
+	if (no%2!=0):
+		if (SelfTest!="Invalid Self Test Code"):
+			write_log("SEND_DIAGNOSTIC","SUCCESSFUL")
+			return SelfTest + " Successful"
+		else:
+			fp.write("SEND_DIAGNOSTIC FAIL 11")
+		        fp.close()
+			write_log("SEND_DIAGNOSTIC","FAILED")
+			return SelfTest + ".Please execute the command again !"
+	else:
+		if (SelfTest!="Invalid Self Test Code"):
+			fp.write("SEND_DIAGNOSTIC FAIL 11")
+			write_log("SEND_DIAGNOSTIC","FAILED")
+			fp.close()
+			return SelfTest + " Failed." + "Please execute the command again till success !"
+		else:
+			fp.write("SEND_DIAGNOSTIC FAIL 11")
+		        fp.close()
+			write_log("SEND_DIAGNOSTIC","FAILED")
+			return SelfTest + ".Please execute the command again !"
+
+
+
+
+	
+
+	
+	
+	

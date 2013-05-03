@@ -1,0 +1,49 @@
+from write_log import *
+def receive_mode_select(s):
+	write_log("MODE SELECT","STARTED")
+        st='Mode Select successful'
+        if(s["lun"][0]=='1' or s["lun"][0]=='2' or s["lun"][0]=='3' or s["lun"][0]=='4' or s["lun"][0]=='5'):
+        	myfile="lun"+s["lun"][0]+".dat"
+                fo=open(myfile,"w+")
+        else:
+		fs = open("sense.dat","w")
+		fs.write("MODE_SELECT FAIL 11") 
+		fs.close()
+		st='UNSUCCESSFUL: Invalid lun number'
+                write_log("MODE SELECT",st)
+                return st
+	if(s["pf"][0]=='0'):
+		fo.write("The page format is vendor specific\n");
+	elif(s["pf"][0]=='1'):
+		fo.write("The header and block descriptors are set by standard\n");
+        else:
+		fs = open("sense.dat","w")
+		fs.write("MODE_SELECT FAIL 5") 
+		fs.close()
+		st='UNSUCCESSFUL:Invalid pf bit value'
+                write_log("MODE SELECT",st)
+                return st
+        fo.write("Parameter List Length:"+str(s["paramlength"][0])+"\n");
+	if(s["sp"][0]=='0'):
+		print 'The mode page shall not be saved.The command terminated with CHECK CONDITION status'
+                fo.write("Termination status:Check Condition\nSense Key:Illegal Request\nAdditional Sense Code:Invalid");
+	elif(s["sp"][0]=='1') : 
+		fp=open("controlModePage.datt","r")
+                ps=fp.read(1);
+                fp.close()
+                if(ps=='1'):
+			 print 'The mode page shall be saveable'
+		else:
+			 fo.write("Termination status:Check Condition\nSense Key:Illegal Request\nAdditional Sense Code:Invalid");
+	else:
+		fs = open("sense.dat","w")
+		fs.write("MODE_SELECT FAIL 5") 
+		fs.close()
+		st='UNSUCCESSFUL:Invalid sp bit value'
+		write_log("MODE SELECT",st)
+                return st
+        fo.close()
+	write_log("MODE SELECT","SUCCESSFUL")
+	return st
+        
+

@@ -1,0 +1,33 @@
+from readCapPopup import *
+from PyQt4 import QtCore, QtGui
+
+class ReadCapPopup(QtGui.QDialog):
+	def __init__(self):
+		QtGui.QDialog.__init__(self)
+		self.read_cap = {}
+		
+		self.ui = Ui_Dialog()
+		self.ui.setupUi(self)
+		self.ui.pushButton.clicked.connect(self.createReadCapCdb)
+		
+		
+	#package to be sent
+	def createReadCapCdb(self):
+		self.read_cap["operationCode"]=[0x25,0,7,8]
+		self.read_cap["reserved_1"] = ["reserved",1,7,7]
+		self.read_cap["RelAdr"]=[0,1,0,1]
+		pmi=str(self.ui.lineEdit.text())
+		lba=str(self.ui.lineEdit_2.text())
+		self.read_cap["LBA"]=[lba,2,7,32]
+		self.read_cap["reserved_2"]=["reserved",6,7,8]
+		self.read_cap["reserved_3"]=["reserved",7,7,8]
+		self.read_cap["reserved_4"]=["reserved",8,7,7]
+		self.read_cap["pmi"]=[pmi,8,0,1]
+		self.read_cap["control"]=["control",9,7,8]
+		self.close()
+	
+	def getCdb(self):
+		return self.read_cap;
+
+
+

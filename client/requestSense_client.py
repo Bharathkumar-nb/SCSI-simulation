@@ -1,0 +1,34 @@
+from reqSensePopup import Ui_MainWindow
+from PyQt4 import QtCore, QtGui
+from write_log import *
+
+class reqSensePopup(QtGui.QDialog):
+	def __init__(self):
+		QtGui.QDialog.__init__(self)
+		self.send_cdb= {}
+		self.ui = Ui_MainWindow()
+		self.ui.setupUi(self)
+		self.ui.pushButton.clicked.connect(self.create_request_sense)
+		
+	
+	
+	def create_request_sense(self):
+		write_log("REQUEST SENSE","STARTED")
+		self.send_cdb["operationCode"]=[0x03,0,7,8]
+		self.send_cdb["reserved_1"]=["reserved",1,7,7]
+		
+		self.send_cdb["desc"]=[str(self.ui.lineEdit.text()),1,0,1]
+		self.send_cdb["reserved_2"]=["reserved",2,7,16]
+		
+		self.send_cdb["alllength"]=[18,4,7,8]
+		self.send_cdb["control"]=["control",5,7,8]
+		self.close()
+	
+	
+	
+	def getCdb(self):
+		return self.send_cdb;
+
+
+
+

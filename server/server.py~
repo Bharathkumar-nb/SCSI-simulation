@@ -1,0 +1,163 @@
+import sys
+from PyQt4.QtNetwork import *
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import *
+from ui_server import Ui_Form 
+from read_server import *
+from inquiry_server import *
+from readcap_server import *
+from sendDiag_server import *
+from reqsense_server import *
+from report_luns_server import *
+from mode_select_server import *
+from logsense_server import *
+from startStop_server import *
+from TUR_server import TurServer
+from formatunit_server import *
+from mode_sense_server import *
+import write_command
+
+class MyForm(QtGui.QMainWindow):
+	def __init__(self, parent=None):
+		# setting up gui
+		QtGui.QWidget.__init__(self, parent)
+		self.ui = Ui_Form()
+		self.ui.setupUi(self)
+		self.setWindowTitle("SCSI_server")
+		self.client = None
+		self.ui.pushButton_2.setEnabled(False)
+		self.request = QByteArray();
+
+		# creates a new socket
+		self.s = QTcpServer()
+		self.ui.lineEdit_2.setText("5131")
+
+		self.connect(self.ui.pushButton_3, SIGNAL("clicked()"), self.setPort)
+			  
+
+		# signals and events
+
+
+		self.connect(self.s, SIGNAL("newConnection()"), self.addConnection)
+		self.connect(self.ui.pushButton_2, SIGNAL("clicked"), self.removeCon)
+		self.connect(self.ui.pushButton_4, SIGNAL("clicked()"), self.clrScr)
+
+	def clrScr(self):
+		self.ui.textBrowser.clear()
+
+	def setPort(self):
+		port = self.is_number(self.ui.lineEdit_2.text())
+		if (port) and (port > 1024 and port < 62000) :
+			self.s.listen(QHostAddress("0.0.0.0"), port)
+			self.ui.pushButton_3.setEnabled(False)
+			self.ui.textBrowser.append("Port number set to " + str(port))
+			self.ui.textBrowser.append("Waiting for connection...")
+
+
+	def is_number(self, s):
+		try:
+			float(s)
+			return int(s)
+		except ValueError:
+			return False
+
+
+	def addConnection(self):
+		self.client = self.s.nextPendingConnection()
+		if self.client :
+			self.ui.textBrowser.append("connection Established!!")
+			self.ui.pushButton_2.setEnabled(True)
+			self.connect(self.client, SIGNAL("readyRead()"), self.recieveMsg)
+			#self.connect(self.ui.pushButton, SIGNAL("clicked()"), self.sendMsg)
+			self.connect(self.ui.pushButton_2, SIGNAL("clicked()"), self.removeCon)
+			#self.ui.pushButton.clicked.connect(self.sendMsg(client))
+			#self.client.disconnected.connect(self.removeCon())
+
+	def recieveMsg(self):
+		rply = self.client.readLine(10000)
+		reply = eval(rply)
+		#change
+		if reply["operationCode"][0]==0x08:
+			self.ui.textBrowser.append("READ RECIEVED.")
+			resp = read(reply)
+			self.client.write(str(resp))
+
+		elif reply["operationCode"][0]==0x25:
+			self.ui.textBrowser.append("READ_capacity RECIEVED.")
+			resp = target_response(reply)
+			self.client.write(str(resp))
+
+		elif reply["operationCode"][0]==0x12:
+			self.ui.textBrowser.append("Inquiry RECIEVED.")
+			resp = inquiry_target(reply)
+			self.client.write(str(resp))
+		elif reply["operationCode"][0]==0x1D:
+			self.ui.textBrowser.append("SEND DIAGNOSTIC RECIEVED.")
+			resp = sendDiag_server(reply)
+			self.client.write(str(resp))
+
+		elif reply["operationCode"][0]==0x03:
+			self.ui.textBrowser.append("REQUEST SENSE RECIEVED.")
+			resp = receive_request_sense(reply)
+			self.client.write(str(resp))
+
+		elif reply["operationCode"][0]==0xA0:
+			self.ui.textBrowser.append("REPORT LUNS RECIEVED.")
+			resp = reportLunsServer(reply)
+			self.client.write(str(resp))
+		
+		elif reply["operationCode"][0]==0x15:
+			self.ui.textBrowser.append("MODE SELECT RECIEVED.")
+			resp = receive_mode_select(reply)
+			self.client.write(str(resp))
+		
+		elif reply["operationCode"][0]==0x4D:
+			self.ui.textBrowser.append("LOG SENSE COMMAND RECIEVED.")
+			resp = logsense_response(reply)
+			self.client.write(resp)
+		
+		elif reply["operationCode"][0]==0x1B:
+			self.ui.textBrowser.append("START STOP COMMAND RECIEVED.")
+			resp = startStop(reply)
+			self.client.write(resp)
+		
+		elif reply["operationCode"][0]==0x0A:
+			if not reply.has_key("content"):
+				self.ui.textBrowser.append("WRITE CDB RECIEVED.")
+				self.client.write(str(dict([("status","received"),("cmd","write"),("cdb",str(reply))])))
+			elif reply.has_key("content"):
+				self.ui.textBrowser.append("FILE TRANSFER COMPLETE")
+				f_handler = write_command.serverFileHandler(reply)
+				f_handler.write_content()
+
+		elif reply["operationCode"][0]==0x00:
+			self.ui.textBrowser.append("TEST UNIT READY RECIEVED.")
+			resp = TurServer(reply)
+			self.client.write(resp)
+		
+		elif reply["operationCode"][0]==0x04:
+			self.ui.textBrowser.append("FORMAT UNIT RECIEVED.")
+			resp = format_unit_function(reply)
+			self.client.write(resp)
+		
+		elif reply["operationCode"][0]==0x1A:
+			self.ui.textBrowser.append("MODE SENSE RECIEVED.")
+			resp = mode_sense_server(reply)
+			self.client.write(resp)
+
+
+	def removeCon(self):
+		if self.client:
+			self.ui.pushButton_2.setEnabled(False)
+			#self.ui.lineEdit.setEnabled(False)
+			self.ui.textBrowser.append("connection closed..")
+			self.ui.textBrowser.append("Waiting for connection....")
+			self.client.close()
+        
+
+if __name__ == "__main__":
+	app = QtGui.QApplication(sys.argv)
+	myapp = MyForm()
+	myapp.show()
+	sys.exit(app.exec_())
+        

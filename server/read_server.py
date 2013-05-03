@@ -1,0 +1,45 @@
+from write_log import *
+
+def read(cdb): #the reply is sent as an arg to read function
+	write_log("READ","STARTED")
+	fileNo = int(cdb["LUN"][0])
+	blockNo = int(cdb["LBA_third"][0])
+	transferLen = int(cdb["transferLength"][0])
+	fs = open("sense.dat","w")
+	resp = None
+
+	if(fileNo > 5 or blockNo > 5):   #block no is 2 and transfer length 4 ..possible
+		#check condition
+		fs.write("READ FAIL 11")
+		write_log("READ","FAILED")
+		resp =  "INVALID LUN/LBA"
+
+	elif (transferLen + blockNo > 6):
+		fs.write("READ FAIL 11")
+		write_log("READ","FAILED")
+		resp = "INVALID TRANSFER LENGTH"
+	else:
+		blockSize = 100
+		totalBytes = blockSize * int(transferLen)
+
+		fileName = "file" + str(fileNo) + ".txt"
+		write_log("READ","WORKING ON LUN "+str(fileNo))
+		write_log("READ","WORKING ON LBA"+str(blockNo))
+		startAddress = (int(blockNo)-1) * blockSize
+
+		fp = open(fileName,"r")
+		fp.seek(startAddress,0)  #seek to specific LBA
+		resp = {}
+		resp["read"] = fp.read(totalBytes)
+		write_log("READ","SUCCESSFUL")
+		fp.close()
+		
+	fs.close()
+	return str(resp)
+		
+
+	
+
+	
+	
+	

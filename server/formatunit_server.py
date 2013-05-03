@@ -1,0 +1,24 @@
+from write_log import *
+
+def format_unit_function(cdb):
+	# since we are having 5 files
+	write_log("FORMAT_UNIT","STARTED")
+	luns = [1,2,3,4,5]
+
+	filenames = []
+	lba_size = 100
+	no_of_lbas = 5
+
+	for i in range(0,5):
+		filename = "file"+str(luns[i])+".txt"
+		filenames.append(filename)
+	
+	for eachFilename in filenames:
+		fileHandler = open(eachFilename,'w')
+		fileHandler.write(lba_size*no_of_lbas*'\0')
+		fileHandler.close()
+
+	format_unit_summary = "no of lbas formatted is: " + str(no_of_lbas) + " lba size: " + str(lba_size)
+	write_log("FORMAT_UNIT","SUCCESSFUL")
+	return format_unit_summary
+
